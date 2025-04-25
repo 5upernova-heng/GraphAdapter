@@ -2,11 +2,20 @@
 This repository is an implementation of GraphAdapter - [Can GNN be Good Adapter for LLMs?](https://arxiv.org/abs/2402.12984) in WWW 2024.
 
 ## Requirements
-* python = 3.8
+* python = 3.10
 * numpy >= 1.19.5
-* pytorch = 1 .10.2
+* pytorch = 2.1.0 
 * pyg = 2.3.1
 * transformers >= 4.28.1 
+* cuda = 12.1
+
+```bash
+conda create -n Adapter python=3.10
+pip install torch==2.1.0 --index-url https://download.pytorch.org/whl/cu121
+pip install pyg_lib torch_scatter torch_sparse torch_cluster torch_spline_conv -f https://data.pyg.org/whl/torch-2.1.0+cu121.html
+pip install transformers numpy joblib tables protobuf
+```
+
 
 For the largest dataset Arxiv, 300G storage is required
 ## How to use our code
