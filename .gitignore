@@ -1,0 +1,10 @@
+# python
+__pycache__/
+
+# dataset
+datasets/
+pretrain_models/
+token_embedding/
+
+# scripts
+scripts/
