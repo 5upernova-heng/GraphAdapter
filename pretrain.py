@@ -4,7 +4,7 @@ from pretrain_utils import pretrain_graph_adapter
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(description='graph adapter')
     parser.add_argument('--device', type=int, default=0)
-    parser.add_argument('--dataset_name', type=str, help='dataset to be used', default='instagram', choices=['arxiv', 'instagram', 'reddit'])
+    parser.add_argument('--dataset_name', type=str, help='dataset to be used', default='instagram')
     parser.add_argument('--max_epoch', type=int, default=50)
     parser.add_argument('--hiddensize_gnn', type=int, default=128)
     parser.add_argument('--hiddensize_fusion', type=int, default=128)

@@ -206,8 +206,7 @@ def save_lm_head(model):
     
 if __name__ == "__main__":
     parser = argparse.ArgumentParser('preprocess text-attributed graph by LLMs to gain the token embedding')
-    parser.add_argument('--dataset_name', type=str, help='dataset to be used', default='instagram',
-                        choices=['arxiv', 'instagram', 'reddit'])
+    parser.add_argument('--dataset_name', type=str, help='dataset to be used', default='instagram')
     parser.add_argument('--batch_size', type=int, default=2, help='batch size of llama 2')
     parser.add_argument('--plm_path', type=str, default='/data/pretrain_models/llama-2-13b-hf', help='path of llama 2')
     parser.add_argument('--gpu', type=int, default=0, help='number of gpu to use')

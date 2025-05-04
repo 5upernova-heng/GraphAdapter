@@ -12,6 +12,9 @@ def get_template_by_dataset(dataset_name):
     elif(dataset_name == 'reddit'):
         template_l = "It is a user on Reddit, and his last 3 posts are: \n\n"
         template_r = ".\n\nQuestion: Based on the given posts, the style of this user is \"___\" (answer in one word).\nAnswer: \""
+    elif('update_config' in dataset_name):
+        template_l = "Here is an intent of network operator, and its description reads: \n\n"
+        template_r = ".\n\nQuestion: Based on the given intents, the modified configuration update is \"___\" (answer in a JSON object).\nAnswer: \""
     else:
         raise "template of this dataset are not registered, please modifing the prompt_config.py"
         

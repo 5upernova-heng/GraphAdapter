@@ -16,8 +16,7 @@ def run_exp(args):
 if __name__ == "__main__":
     set_random_seed(0)
     parser = argparse.ArgumentParser('finetuning GraphAdapter')
-    parser.add_argument('--dataset_name', type=str, help='dataset to be used', default='instagram',
-                        choices=['arxiv', 'instagram', 'reddit'])
+    parser.add_argument('--dataset_name', type=str, help='dataset to be used', default='instagram')
     parser.add_argument('--step', type=int, default=20, help='epoch of saved graphadapter')
     parser.add_argument('--load_from_pretrain', type=int, default=1, help='whether using pretrained model',choices=[0,1])
     parser.add_argument('--learning_rate', type=float, default=1e-4, help='learning rate')
