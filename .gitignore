@@ -5,6 +5,10 @@ __pycache__/
 datasets/
 pretrain_models/
 token_embedding/
+prompt_embedding/
+
+# models
+save_models/
 
 # scripts
 scripts/
