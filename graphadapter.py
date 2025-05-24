@@ -231,12 +231,13 @@ class GraphAdapter(torch.nn.Module):
     def forward(self, x, edge_index, node_ids=None, prompt=None):
         gx = self.graph_encode(x, edge_index)
         out = self.fuse_model(gx, node_ids, prompt)
+        out += gx
         return out
 
 
 ##used for downstream task
 class LinearHead(torch.nn.Module):
-    def __init__(self, x_shape, y_shape, pretrain_args):
+    def __init__(self, x_shape, seq_len, graph_size, vocab_size, pretrain_args):
         super(LinearHead, self).__init__()
         self.ga = GraphAdapter(
             llm_shape=x_shape,
@@ -246,14 +247,27 @@ class LinearHead(torch.nn.Module):
             num_layers=pretrain_args.num_layers,
             is_pretraining=False,
         )
+        self.vocab_size = vocab_size
+        self.lin1 = torch.nn.Linear(pretrain_args.hiddensize_fusion, seq_len)
+        self.lin2 = torch.nn.Linear(graph_size, vocab_size)
 
-        self.lin = torch.nn.Linear(pretrain_args.hiddensize_fusion, y_shape)
-        self.lin.weight = torch.nn.Parameter(
-            (self.lin.weight - self.lin.weight.mean() / self.lin.weight.std()) * 0.1210,
-            requires_grad=True,
-        )  ## since
-
-    def forward(self, x, edge_index, prompt_embedding):
+    def forward(self, x, edge_index, prompt_embedding, labels):
+        """
+        x:[node_num, llm_shape]
+        edge_index: [2, edge_num]
+        prompt_embedding: [node_num, llm_shape]
+        """
         x = self.ga(x, edge_index, torch.arange(len(x)), prompt_embedding)
-        x = self.lin(x)
-        return F.log_softmax(x, dim=1), x
+
+        # [graph_size, hidden_size] -> [graph_size, seq_len]
+        x = self.lin1(x)
+        # [graph_size, seq_len] -> [seq_len, graph_size]
+        x = x.transpose(0, 1)
+        # [seq_len, graph_size] -> [seq_len, vocab_size]
+        x = self.lin2(x)
+
+        logits = x.view(-1, self.vocab_size)
+        labels = labels.to(logits.device)
+        loss = F.cross_entropy(logits, labels)
+
+        return loss, logits, labels

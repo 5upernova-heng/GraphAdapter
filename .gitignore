@@ -12,3 +12,8 @@ save_models/
 
 # scripts
 scripts/
+
+# logs & results
+*.log
+*.png
+results/
