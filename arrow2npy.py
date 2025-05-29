@@ -32,7 +32,6 @@ from transformers import AutoModelForCausalLM, AutoTokenizer
 def mask_dict(data_dict: dict, key: str):
     modified_dict = copy.deepcopy(data_dict)
     config_list = modified_dict.get(key)
-    print(data_dict, key, config_list)
     assert isinstance(config_list, list)
     chosen_index = random.choice(range(len(config_list)))
     value = config_list[chosen_index][2]
