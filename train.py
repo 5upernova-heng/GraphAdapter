@@ -21,6 +21,7 @@ if __name__ == "__main__":
     parser = argparse.ArgumentParser("finetuning GraphAdapter")
     # data
     parser.add_argument("--dataset_name", type=str, help="dataset to be used", default="instagram")
+    parser.add_argument("--plm_path", type=str, default="/data/user/jzt/models/Llama-2-7b-hf", help="path of llama 2")
     # training
     parser.add_argument("--gpu", type=int, default=0, help="number of gpu to use")
     parser.add_argument("--max_epoch", type=int, default=15)

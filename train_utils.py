@@ -15,8 +15,11 @@ from torch_geometric.data import Data
 import numpy as np
 import torch
 import torch.nn.functional as F
+from transformers import AutoTokenizer, PreTrainedTokenizer
 
 # from utils import load_data
+import os
+import pickle
 import pandas as pd
 import argparse
 import joblib
@@ -103,12 +106,22 @@ def evaluate(out, label, mask, metric="acc"):
         gy = label[mask].cpu().long().numpy()
         val = average_precision_score(gy, py)
         return val
+    
+
+def dump_test_string(f, labels, values, mask):
+    indices = [i for i in range(len(mask)) if mask[i]]
+    for i in indices:
+        f.write(f'Index: {i}\n')
+        predict = labels[i].replace("'-'", str(int(values[i])))
+        f.write(f'Predict: {predict}\n')
 
 
 def finetune(data, args):
     model = None
     device = args.device
     model = LinearHead(data.x.shape[1], int(data.y.max()) + 1, args)
+    with open(f'./datasets/{args.dataset_name}/labels.pkl', 'rb') as f:
+        labels = pickle.load(f)
 
     prompt_x = np.load("./prompt_embedding/" + args.dataset_name + "/prompt_embedding.npy")
     prompt_x = torch.tensor(prompt_x).float().to(device)
@@ -134,7 +147,7 @@ def finetune(data, args):
     loss = None
     val_acc = 0
     test = 0
-    for i in range(35000):
+    for i in range(10000):
         model.train()
         model.ga.train()
         optimizer.zero_grad()
@@ -153,6 +166,14 @@ def finetune(data, args):
                 print(f"best in epoch {i}: train:{tr:.4f},valid:{val:.4f},test:{test:.4f}")
                 val_acc = val
                 duration = 0
+    out = torch.argmax(out, dim=1)
+    # dump output
+    dump_path = f'./results/{args.dataset_name}' 
+    if not os.path.exists(dump_path):
+        os.makedirs(dump_path)
+    with open(f'{dump_path}/test.log', 'w') as f:
+        dump_test_string(f, labels, out, data.test_mask)
+
     print("final_loss", loss.item())
     model.eval()
     return test

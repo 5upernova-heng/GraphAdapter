@@ -40,7 +40,15 @@ def mask_dict(data_dict: dict, key: str):
     return value, str(modified_dict)
 
 
-def gen_template(label: str, args) -> Tuple[int, str, str]:
+def gen_template(label: str, args) -> Tuple[int, dict, str, str]:
+    """
+    将 label 字典中 OSPF 或 BGP 的一个参数值 mask
+    返回：
+        - value: 被 mask 的值
+        - modified_dict：mask 后的字典
+        - template_l: 附加在节点文本前的 prompt，内附带 mask 后的字典
+        - template_r: 附加在节点文本后的 prompt，固定
+    """
     label = label.replace("'", '"')
     update_records = json.loads(label)
     if args.ospf:
@@ -52,14 +60,14 @@ def gen_template(label: str, args) -> Tuple[int, str, str]:
 
     template_l = f"Here is an intent from network operator that asks you to update network configurations, the update abstract are as follows {modified_dict}"
     template_r = '.\n\nQuestion: Based on given intents and update abstract, the masked value is "___" (answer is an integer)'
-    return value, template_l, template_r
+    return value, modified_dict, template_l, template_r
 
 
 def get_llm_embeddings_for_finetune(
     raw_texts: List[str],
     labels: List[str],
     args,
-) -> Tuple[np.ndarray, np.ndarray, np.ndarray]:
+) -> Tuple[np.ndarray, np.ndarray, np.ndarray, List[str]]:
     """
     为给定的原始文本列表生成两种类型的LLM嵌入，以匹配finetune代码的需求。
     返回:
@@ -83,6 +91,7 @@ def get_llm_embeddings_for_finetune(
     all_sentence_embeddings_list = []
     all_full_prompt_embeddings_list = []
     all_y_values = []
+    all_masked_labels = []
 
     logger.info(f"Generating embeddings in batches of {batch_size} on {device}...")
     for i in tqdm(range(0, len(raw_texts), batch_size), desc="Processing batches"):
@@ -94,12 +103,13 @@ def get_llm_embeddings_for_finetune(
 
         for text_idx_in_batch, text_content in enumerate(batch_raw_texts):
             current_label = batch_labels[text_idx_in_batch]
-            y_value, template_l, template_r = gen_template(current_label, args)
+            y_value, modified_dict, template_l, template_r = gen_template(current_label, args)
 
             all_y_values.append(y_value)  # 收集y值
 
             texts_for_sentence_emb.append(template_l + text_content)
             texts_for_full_prompt_emb.append(template_l + text_content + template_r)
+            all_masked_labels.append(str(modified_dict))
 
         # 1. 生成 "sentence_embeddings" (对应 data.x)
         inputs_sentence = tokenizer(texts_for_sentence_emb, padding=True, truncation=True, max_length=max_length, return_tensors="pt").to(device)
@@ -132,7 +142,7 @@ def get_llm_embeddings_for_finetune(
     y_np = np.array(all_y_values, dtype=np.int64)
 
     logger.info("Embeddings generated successfully.")
-    return sentence_embeddings_np, full_prompt_embeddings_np, y_np
+    return sentence_embeddings_np, full_prompt_embeddings_np, y_np, all_masked_labels
 
 
 def main():
@@ -158,7 +168,7 @@ def main():
     edge_index = pickle.load(open(f'{arrow_path}/edge_index.pkl', 'rb'))
 
     # 2. 调用嵌入生成函数
-    sentence_embeddings, full_prompt_embeddings, y_target = get_llm_embeddings_for_finetune(
+    sentence_embeddings, full_prompt_embeddings, y_target, labels = get_llm_embeddings_for_finetune(
         raw_texts=config_dataset['config_desc'],
         labels=train_dataset['labels'],
         args=args,
@@ -171,6 +181,7 @@ def main():
     path_prompt_embeddings = f'./prompt_embedding/{dataname}/prompt_embedding.npy'
     path_edge_index = f'./datasets/{dataname}/edge_index.npy'
     path_y = f'./datasets/{dataname}/y.npy'
+    path_labels = f'./datasets/{dataname}/labels.pkl'
     
     for path in [path_sentence_embeddings, path_prompt_embeddings, path_edge_index, path_y]:
         path = os.path.dirname(path)
@@ -190,6 +201,9 @@ def main():
 
         np.save(path_y, y_target)
         logger.info(f"Saved y targets to: {path_y} (Shape: {y_target.shape})")
+        
+        with open(path_labels, 'wb') as f:
+            pickle.dump(labels, f)
 
         logger.info("All files saved successfully. Preprocessing complete.")
     except Exception as e:
