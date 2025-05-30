@@ -140,6 +140,7 @@ def main():
     parser.add_argument('arrow_path')
     # 嵌入
     parser.add_argument("--plm_path", type=str, default="/data/user/jzt/models/Llama-2-7b-hf", help="path of llama 2")
+    parser.add_argument("--dataname", type=str, required=True)
     parser.add_argument("--gpu", type=int, default=0, help="number of gpu to use")
     parser.add_argument("--batch_size", type=int, default=8)
     parser.add_argument("--max_length", type=int, default=512)
@@ -163,16 +164,18 @@ def main():
         args=args,
     )
 
-    # 3. 创建输出目录（如果不存在）
-    os.makedirs(args.output_dir, exist_ok=True)
-    logger.info(f"Output directory: {args.output_dir}")
-
     # 4. 定义输出文件名 (与你之前finetune代码中加载的名称对应)
-    dataname = os.path.basename(args.arrow_path)
+    dataname = args.dataname
+    logger.info(f"Dataname: {dataname}")
     path_sentence_embeddings = f'./token_embedding/{dataname}/sentence_embeddings.npy'
     path_prompt_embeddings = f'./prompt_embedding/{dataname}/prompt_embedding.npy'
     path_edge_index = f'./datasets/{dataname}/edge_index.npy'
     path_y = f'./datasets/{dataname}/y.npy'
+    
+    for path in [path_sentence_embeddings, path_prompt_embeddings, path_edge_index, path_y]:
+        path = os.path.dirname(path)
+        if not os.path.exists(path):
+            os.makedirs(path, exist_ok=True)
 
     # 5. 保存 NumPy 数组
     try:
